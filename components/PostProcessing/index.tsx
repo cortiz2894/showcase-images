@@ -19,14 +19,14 @@ const PostProcessing = () => {
     ior: { value: 1.94, min: 0.8, max: 5.5, step: 0.01 },
     transmission: { value: 1, min: 0, max: 1, step: 0.1 },
     roughness: { value: 0, min: 0, max: 1, step: 0.001 },
-    chromaticAberration: { value: 0.1, min: 0, max: 1, step: 0.001 },
-    thickness: { value: 0.01, min: 0, max: 0.2, step: 0.001 },
+    chromaticAberration: { value: 0.35, min: 0, max: 1, step: 0.001 },
+    thickness: { value: 0.02, min: 0, max: 0.2, step: 0.001 },
   });
 
   return active ? (
     <mesh
       position={[0, 0, 10]}
-      scale={[viewport.width, viewport.height * 0.2, 1]}
+      scale={[viewport.width, viewport.height * 0.5, 1]}
     >
       <planeGeometry />
       <MeshTransmissionMaterial

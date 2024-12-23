@@ -1,13 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useLoader } from "@react-three/fiber";
-import { Group, TextureLoader } from "three";
+import { TextureLoader } from "three";
 import * as THREE from "three";
-import { Effects } from "./Effects";
 import PostProcessing from "./PostProcessing";
-import { OrbitControls } from "@react-three/drei";
 
 interface BlockProps {
   positionY: number;
@@ -94,9 +92,56 @@ const Block = ({
   const dynamicRadius = sectionIndex % 2 === 0 ? radius * 1 : radius * 0.8;
   const blockGeometry = createCurvedPlane(6, 2.7, dynamicRadius, 10);
 
-  useFrame(() => {
+  const isScrollingRef = useRef(false);
+  const rotationSpeedRef = useRef(0.001);
+  const lastScrollTopRef = useRef(0);
+  const targetSpeedRef = useRef(0);
+  const currentSpeedRef = useRef(0);
+
+  const baseSpeed = sectionIndex % 2 === 0 ? 0.001 : -0.001;
+  const scrollingSpeed = baseSpeed * 35;
+
+  useEffect(() => {
+    currentSpeedRef.current = baseSpeed;
+    targetSpeedRef.current = baseSpeed;
+  }, [baseSpeed]);
+
+  useEffect(() => {
+    let scrollTimeout: NodeJS.Timeout;
+
+    const handleScroll = () => {
+      const currentScrollTop =
+        window.pageYOffset || document.documentElement.scrollTop;
+
+      if (currentScrollTop !== lastScrollTopRef.current) {
+        isScrollingRef.current = true;
+        targetSpeedRef.current = scrollingSpeed;
+        lastScrollTopRef.current = currentScrollTop;
+      }
+
+      clearTimeout(scrollTimeout);
+
+      scrollTimeout = setTimeout(() => {
+        isScrollingRef.current = false;
+        targetSpeedRef.current = baseSpeed;
+      }, 100);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      clearTimeout(scrollTimeout);
+    };
+  }, [baseSpeed, scrollingSpeed]);
+
+  useFrame((state, delta) => {
     if (groupRef.current) {
-      groupRef.current.rotation.y += sectionIndex % 2 === 0 ? 0.001 : -0.001;
+      // Aplicar aceleración/desaceleración suave
+      const speedDiff = targetSpeedRef.current - currentSpeedRef.current;
+      currentSpeedRef.current += speedDiff * 0.1; // Ajusta este valor para cambiar la suavidad de la transición
+
+      groupRef.current.rotation.y += currentSpeedRef.current * delta * 60;
     }
   });
 
@@ -120,21 +165,15 @@ interface GalleryProps {
 const Gallery = ({ listImages }: GalleryProps) => {
   const groupRef = useRef<THREE.Group | null>(null);
 
-  // Mouse Events
-  const mousePosition = useRef({ x: 0, y: 0 }); // Usamos una referencia para almacenar la posición del mouse
-  const smoothMousePosition = useRef({ x: 0, y: 0 }); // Posición suavizada del mouse
   // Scroll Events
   const scrollPosition = useRef(0); // Almacena la posición objetivo del scroll
   const smoothScrollPosition = useRef(0);
 
-  const [direction, setDirection] = useState(1);
   const totalImages = listImages.length;
   const numSections = Math.ceil(totalImages / BLOCKS_PER_SECTION);
   const totalHeight = numSections * VERTICAL_SPACING;
   const startY = -totalHeight / 1.8;
-  const maxHeight = totalHeight / 2;
-  const speed = 0.002;
-  const smoothFactor = 0.05; // Factor de suavizado (ajustable)
+  const smoothFactor = 0.1; // Factor de suavizado (ajustable)
   const scrollFactor = 0.05; // Factor de velocidad del scroll
 
   const blocks = listImages.map((img, index) => {
@@ -154,49 +193,24 @@ const Gallery = ({ listImages }: GalleryProps) => {
     );
   });
 
-  const handleMouseMove = (event: MouseEvent) => {
-    // Actualizamos la posición del mouse en la referencia
-    mousePosition.current.x = (event.clientX / window.innerWidth) * 1.5 - 1;
-    mousePosition.current.y = -(event.clientY / window.innerHeight) * 1.5 + 1;
-  };
-
   const handleScroll = () => {
-    console.log(scrollPosition.current);
-    // Actualizamos la posición objetivo del scroll
     scrollPosition.current = window.scrollY * scrollFactor;
   };
 
   useEffect(() => {
-    window.addEventListener("mousemove", handleMouseMove);
     window.addEventListener("scroll", handleScroll);
 
     return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("scroll", handleScroll);
     };
   }, []);
 
   useFrame(() => {
-    if (groupRef.current && mousePosition.current) {
-      // groupRef.current.position.y += direction * speed;
-
-      // Suavizado: interpolamos hacia la posición objetivo del scroll
+    if (groupRef.current) {
       smoothScrollPosition.current +=
         (scrollPosition.current - smoothScrollPosition.current) * smoothFactor;
 
-      // Suavizado: interpolamos la posición suavizada hacia la posición objetivo
-      smoothMousePosition.current.x +=
-        (mousePosition.current.x - smoothMousePosition.current.x) *
-        smoothFactor;
-      smoothMousePosition.current.y +=
-        (mousePosition.current.y - smoothMousePosition.current.y) *
-        smoothFactor;
-
-      // Aplicamos la posición suavizada para la rotación
-      groupRef.current.rotation.x = (smoothMousePosition.current.y * 0.2) / 5;
-      groupRef.current.rotation.y = smoothMousePosition.current.x * 0.2;
-
-      groupRef.current.position.y = smoothScrollPosition.current;
+      groupRef.current.position.y = smoothScrollPosition.current / 5;
     }
   });
 
@@ -207,8 +221,39 @@ interface GallerySceneProps {
   avatars: string[];
 }
 
+function CameraController() {
+  const { camera } = useThree();
+  const mousePosition = useRef({ x: 0, y: 0 });
+  const smoothMousePosition = useRef({ x: 0, y: 0 });
+  const smoothFactor = 0.3;
+
+  useFrame(() => {
+    smoothMousePosition.current.x +=
+      (mousePosition.current.x - smoothMousePosition.current.x) * smoothFactor;
+    smoothMousePosition.current.y +=
+      (mousePosition.current.y - smoothMousePosition.current.y) * smoothFactor;
+
+    camera.position.x = smoothMousePosition.current.x * 2;
+    camera.position.y = smoothMousePosition.current.y * 0.9;
+    camera.lookAt(0, 0, 0);
+  });
+
+  const handleMouseMove = (event: MouseEvent) => {
+    mousePosition.current.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mousePosition.current.y = -(event.clientY / window.innerHeight) * 2 + 1;
+  };
+
+  useEffect(() => {
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+    };
+  }, []);
+
+  return null;
+}
+
 export default function Scene({ avatars }: GallerySceneProps) {
-  console.log("avatars gallery: ", avatars);
   return (
     <div
       style={{
@@ -220,9 +265,8 @@ export default function Scene({ avatars }: GallerySceneProps) {
       }}
     >
       <Canvas camera={{ fov: 75, position: [0, 0, 12], rotation: [0, 0, 0] }}>
-        {/* <OrbitControls /> */}
+        <CameraController />
         <Gallery listImages={avatars} />
-        {/* <Effects /> */}
         <PostProcessing />
       </Canvas>
     </div>
