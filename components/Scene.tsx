@@ -17,6 +17,7 @@ interface BlockProps {
 
 const BLOCKS_PER_SECTION = 4;
 const VERTICAL_SPACING = 5;
+const MAX_ROTATION_SPEED = 0.08;
 
 function createCurvedPlane(
   width: number,
@@ -92,56 +93,42 @@ const Block = ({
   const dynamicRadius = sectionIndex % 2 === 0 ? radius * 1 : radius * 0.8;
   const blockGeometry = createCurvedPlane(6, 2.7, dynamicRadius, 10);
 
-  const isScrollingRef = useRef(false);
-  const rotationSpeedRef = useRef(0.001);
-  const lastScrollTopRef = useRef(0);
-  const targetSpeedRef = useRef(0);
-  const currentSpeedRef = useRef(0);
-
+  const lastScrollY = useRef(0);
+  const rotationSpeed = useRef(0);
   const baseSpeed = sectionIndex % 2 === 0 ? 0.001 : -0.001;
-  const scrollingSpeed = baseSpeed * 35;
 
   useEffect(() => {
-    currentSpeedRef.current = baseSpeed;
-    targetSpeedRef.current = baseSpeed;
-  }, [baseSpeed]);
-
-  useEffect(() => {
-    let scrollTimeout: NodeJS.Timeout;
-
     const handleScroll = () => {
-      const currentScrollTop =
-        window.pageYOffset || document.documentElement.scrollTop;
+      const currentScrollY = window.scrollY;
+      const scrollDelta = currentScrollY - lastScrollY.current;
 
-      if (currentScrollTop !== lastScrollTopRef.current) {
-        isScrollingRef.current = true;
-        targetSpeedRef.current = scrollingSpeed;
-        lastScrollTopRef.current = currentScrollTop;
-      }
+      const scrollForce = Math.abs(scrollDelta) / 100;
+      const direction = scrollDelta > 0 ? 1 : -1;
 
-      clearTimeout(scrollTimeout);
+      // rotationSpeed.current = baseSpeed + direction * scrollForce * 0.5;
 
-      scrollTimeout = setTimeout(() => {
-        isScrollingRef.current = false;
-        targetSpeedRef.current = baseSpeed;
-      }, 100);
+      rotationSpeed.current = Math.min(
+        Math.max(
+          baseSpeed + direction * scrollForce * 0.5,
+          -MAX_ROTATION_SPEED
+        ),
+        MAX_ROTATION_SPEED
+      );
+
+      lastScrollY.current = currentScrollY;
     };
 
     window.addEventListener("scroll", handleScroll);
-
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-      clearTimeout(scrollTimeout);
-    };
-  }, [baseSpeed, scrollingSpeed]);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [baseSpeed]);
 
   useFrame((state, delta) => {
     if (groupRef.current) {
-      // Aplicar aceleración/desaceleración suave
-      const speedDiff = targetSpeedRef.current - currentSpeedRef.current;
-      currentSpeedRef.current += speedDiff * 0.1; // Ajusta este valor para cambiar la suavidad de la transición
+      // Aplica la rotación
+      groupRef.current.rotation.y += rotationSpeed.current * delta * 90;
 
-      groupRef.current.rotation.y += currentSpeedRef.current * delta * 60;
+      // Reduce gradualmente la velocidad de rotación hacia la velocidad base
+      rotationSpeed.current += (baseSpeed - rotationSpeed.current) * 0.07;
     }
   });
 
@@ -166,15 +153,15 @@ const Gallery = ({ listImages }: GalleryProps) => {
   const groupRef = useRef<THREE.Group | null>(null);
 
   // Scroll Events
-  const scrollPosition = useRef(0); // Almacena la posición objetivo del scroll
+  const scrollPosition = useRef(0);
   const smoothScrollPosition = useRef(0);
 
   const totalImages = listImages.length;
   const numSections = Math.ceil(totalImages / BLOCKS_PER_SECTION);
   const totalHeight = numSections * VERTICAL_SPACING;
   const startY = -totalHeight / 1.8;
-  const smoothFactor = 0.1; // Factor de suavizado (ajustable)
-  const scrollFactor = 0.05; // Factor de velocidad del scroll
+  const smoothFactor = 0.1;
+  const scrollFactor = 0.043;
 
   const blocks = listImages.map((img, index) => {
     const sectionIndex = Math.floor(index / BLOCKS_PER_SECTION);
@@ -226,6 +213,15 @@ function CameraController() {
   const mousePosition = useRef({ x: 0, y: 0 });
   const smoothMousePosition = useRef({ x: 0, y: 0 });
   const smoothFactor = 0.3;
+  const initialZoom = 12;
+  const maxZoomOut = 17;
+  const zoomSpeed = 0.05;
+  const zoomDecay = 0.1;
+
+  const targetZoom = useRef(initialZoom);
+  const currentZoom = useRef(initialZoom);
+  const lastScrollY = useRef(0);
+  const scrollVelocity = useRef(0);
 
   useFrame(() => {
     smoothMousePosition.current.x +=
@@ -235,6 +231,25 @@ function CameraController() {
 
     camera.position.x = smoothMousePosition.current.x * 2;
     camera.position.y = smoothMousePosition.current.y * 0.9;
+
+    targetZoom.current += scrollVelocity.current * zoomSpeed;
+    targetZoom.current = THREE.MathUtils.clamp(
+      targetZoom.current,
+      initialZoom,
+      maxZoomOut
+    );
+
+    currentZoom.current += (targetZoom.current - currentZoom.current) * 0.1;
+    camera.position.z = currentZoom.current;
+
+    targetZoom.current = THREE.MathUtils.lerp(
+      targetZoom.current,
+      initialZoom,
+      1 - zoomDecay
+    );
+
+    scrollVelocity.current *= 0.9;
+
     camera.lookAt(0, 0, 0);
   });
 
@@ -243,10 +258,19 @@ function CameraController() {
     mousePosition.current.y = -(event.clientY / window.innerHeight) * 2 + 1;
   };
 
+  const handleScroll = () => {
+    const currentScrollY = window.scrollY;
+    scrollVelocity.current = Math.abs(currentScrollY - lastScrollY.current);
+    lastScrollY.current = currentScrollY;
+  };
+
   useEffect(() => {
     window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("scroll", handleScroll);
+
     return () => {
       window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("scroll", handleScroll);
     };
   }, []);
 
