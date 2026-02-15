@@ -1,44 +1,51 @@
-import { useThree } from "@react-three/fiber";
-import { MeshTransmissionMaterial } from "@react-three/drei";
+import { useEffect } from "react";
 import { useControls } from "leva";
+import { EffectComposer, Bloom, Noise } from "@react-three/postprocessing";
+import { BlendFunction } from "postprocessing";
+import { PRESETS } from "../PresetSelector/presets";
 
-const PostProcessing = () => {
-  const { viewport } = useThree();
+interface PostProcessingProps {
+  preset: string;
+}
 
-  const {
-    ior,
-    transmission,
-    roughness,
-    chromaticAberration,
-    active,
-    thickness,
-  } = useControls({
-    active: {
-      value: true,
-    },
-    ior: { value: 2.63, min: 0.8, max: 5.5, step: 0.01 },
-    transmission: { value: 1, min: 0, max: 1, step: 0.1 },
-    roughness: { value: 0.09, min: 0, max: 1, step: 0.001 },
-    chromaticAberration: { value: 1, min: 0, max: 5, step: 0.001 },
-    thickness: { value: 0.01, min: 0, max: 0.2, step: 0.001 },
-  });
+const PostProcessing = ({ preset }: PostProcessingProps) => {
+  const [{ bloomIntensity, bloomThreshold, bloomSmoothing, bloomRadius }, setBloom] =
+    useControls("Bloom", () => ({
+      bloomIntensity: { value: 1.2, min: 0, max: 10, step: 0.1, label: "Intensity" },
+      bloomThreshold: { value: 0.01, min: 0, max: 2, step: 0.01, label: "Threshold" },
+      bloomSmoothing: { value: 0.45, min: 0, max: 1, step: 0.05, label: "Smoothing" },
+      bloomRadius: { value: 0.65, min: 0, max: 1, step: 0.05, label: "Radius" },
+    }));
 
-  return active ? (
-    <mesh
-      position={[0, 0, 10]}
-      scale={[viewport.width, viewport.height * 0.5, 1]}
-    >
-      <planeGeometry />
-      <MeshTransmissionMaterial
-        transmission={transmission}
-        roughness={roughness}
-        thickness={thickness}
-        chromaticAberration={chromaticAberration}
-        ior={ior}
-        anisotropicBlur={0.5}
+  useEffect(() => {
+    const p = PRESETS[preset];
+    if (p) {
+      setBloom(p.bloom);
+    }
+  }, [preset, setBloom]);
+
+  const blendMap: Record<string, BlendFunction> = {
+    OVERLAY: BlendFunction.OVERLAY,
+    SCREEN: BlendFunction.SCREEN,
+    SOFT_LIGHT: BlendFunction.SOFT_LIGHT,
+    NORMAL: BlendFunction.NORMAL,
+  };
+
+  return (
+    <EffectComposer>
+      <Bloom
+        intensity={bloomIntensity}
+        luminanceThreshold={bloomThreshold}
+        luminanceSmoothing={bloomSmoothing}
+        mipmapBlur={true}
+        radius={bloomRadius}
       />
-    </mesh>
-  ) : null;
+      {/* <Noise
+        opacity={noiseOpacity}
+        blendFunction={blendMap[noiseBlend] ?? BlendFunction.OVERLAY}
+      /> */}
+    </EffectComposer>
+  );
 };
 
 export default PostProcessing;

@@ -34,7 +34,7 @@ export default function Home() {
     <main>
       {/* <BackgroundAnimated /> */}
       <Header />
-      <div className="min-h-screen h-[300vh] bg-black text-white">
+      <div className="h-screen bg-black text-white">
         <Scene avatars={MOCK_IMAGES} />
       </div>
     </main>
