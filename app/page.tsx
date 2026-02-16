@@ -1,5 +1,10 @@
+'use client'
+
 import BackgroundAnimated from "@/components/BackgroundAnimated/index";
+import Footer from "@/components/Footer";
 import { Header } from "@/components/Header/index";
+import OverlayHeader from "@/components/OverlayHeader";
+import { Leva } from "leva";
 import dynamic from "next/dynamic";
 
 const Scene = dynamic(() => import("@/components/Scene"), {
@@ -29,14 +34,27 @@ const MOCK_IMAGES = [
   "/images/5.png",
 ];
 
+
+
 export default function Home() {
   return (
     <main>
       {/* <BackgroundAnimated /> */}
-      <Header />
+      {/* <Header /> */}
+      <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 50,
+        pointerEvents: "none",
+      }}
+    >
+      <OverlayHeader />
+    </div>
       <div className="h-screen bg-black text-white">
         <Scene avatars={MOCK_IMAGES} />
       </div>
+      <Footer />
     </main>
   );
 }

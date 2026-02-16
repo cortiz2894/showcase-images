@@ -2,20 +2,26 @@
 @tailwind components;
 @tailwind utilities;
 
+
+@theme inline {
+  --font-bebas: var(--font-bebas);
+  --font-barlow: var(--font-barlow);
+  --font-ibm-mono: var(--font-ibm-mono);
+}
+
+
 :root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
-  --color-bg1: rgb(17, 17, 17);
-  --color-bg2: rgb(38, 38, 38);
-  --color1: 80, 80, 80;
-  --color2: 90, 125, 125;
-  --color3: 50, 50, 50;
-  --color4: 66, 58, 117;
-  --color5: 45, 45, 45;
-  --color-interactive: 70, 70, 70;
-  --circle-size: 80%;
-  --blending: hard-light;
+  --color-bg: #1a1816;
+  --color-bg-light: #242220;
+  --color-surface: #2a2826;
+  --color-border: #3a3836;
+  --color-border-light: #a1d6be;
+  --color-text: #d4cfc8;
+  --color-text-muted: #a1d6be;
+  --color-accent: #c8b89a;
+  --color-accent-dim: #9a8e78;
+  --color-white: #f0ece6;
+  --color-black: #0e0d0c;
 }
 
 @media (prefers-color-scheme: dark) {

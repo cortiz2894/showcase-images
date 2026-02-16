@@ -1,6 +1,7 @@
 export interface PresetValues {
   bloom: {
     bloomIntensity: number;
+    bloomThreshold?: number;
   };
   border: {
     borderColor: string;
@@ -34,7 +35,8 @@ export const PRESETS: Record<string, PresetValues> = {
   },
   greenScifi: {
     bloom: {
-      bloomIntensity: 2.7,
+      bloomIntensity: 0.9,
+      // bloomThreshold: 0.01,
     },
     border: {
       borderColor: "#6df4ce",

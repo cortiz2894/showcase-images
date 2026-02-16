@@ -1,6 +1,8 @@
+import { bebasNeue, barlowCondensed, ibmPlexMono} from '@/components/shader/fonts';
 import './globals.css';
 import type { Metadata } from 'next';
 import { Inter, Press_Start_2P } from 'next/font/google';
+
 
 const inter = Inter({ subsets: ['latin'] });
 const pressStart2P = Press_Start_2P({
@@ -21,7 +23,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${inter.className} ${pressStart2P.variable}`}>{children}</body>
+      <body className={`${bebasNeue.variable} ${barlowCondensed.variable} ${ibmPlexMono.variable} antialiased ${inter.className} ${pressStart2P.variable}`}>{children}</body>
     </html>
   );
 }

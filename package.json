@@ -21,6 +21,7 @@
     "eslint-config-next": "13.5.1",
     "gsap": "^3.12.5",
     "leva": "^0.9.35",
+    "lucide-react": "^0.564.0",
     "next": "^13.5.0",
     "postcss": "8.4.30",
     "react": "18.2.0",
