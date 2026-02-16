@@ -4,10 +4,10 @@ import { Twitter, Instagram, Youtube, Github } from 'lucide-react'
 import Link from 'next/link'
 
 const socialLinks = [
-  { icon: Twitter, href: 'https://twitter.com', label: 'Twitter' },
-  { icon: Instagram, href: 'https://instagram.com', label: 'Instagram' },
-  { icon: Youtube, href: 'https://youtube.com', label: 'YouTube' },
-  { icon: Github, href: 'https://github.com', label: 'GitHub' },
+  { icon: Twitter, href: 'https://x.com/cortiz2894', label: 'Twitter' },
+  { icon: Instagram, href: 'https://www.instagram.com/cortiz.dev/', label: 'Instagram' },
+  { icon: Youtube, href: 'https://www.youtube.com/channel/UCFnCV2VGESofcA5gZU8ao2A', label: 'YouTube' },
+  { icon: Github, href: 'https://github.com/cortiz2894', label: 'GitHub' },
 ]
 const Footer =() => (
 
