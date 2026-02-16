@@ -1,36 +1,103 @@
-# 3D Image Showcase — Three.js Interactive Gallery
+# Showcase Images
 
-An immersive 3D scene built with **Three.js**, designed to showcase images in a dynamic and interactive way.  
-The gallery reacts smoothly to **mouse movement** and **scroll interactions**, creating a sense of depth and motion that enhances visual storytelling.
+A 3D cylindrical image gallery built with Next.js, Three.js, and React Three Fiber.
+Images are displayed on a scroll-driven spiral cylinder with custom GLSL shaders, dithering effects, and post-processing.
 
-https://github.com/user-attachments/assets/4ef1d1ec-825b-423d-af3e-8cdaf5f823fa
+![Next.js](https://img.shields.io/badge/Next.js-13.5-black?style=flat-square&logo=next.js)
+![Three.js](https://img.shields.io/badge/Three.js-0.169-black?style=flat-square&logo=three.js)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=flat-square&logo=typescript)
 
-## ✨ Features
+---
 
-- 🌀 3D curved image walls arranged in space  
-- 🎞️ Smooth scroll-based camera movement  
-- 🖱️ Mouse interaction for dynamic rotation and depth  
-- 🔮 Chromatic aberration & bloom effects for a cinematic look  
-- ⚡ Built with performance and visual quality in mind  
-- 📱 Responsive design that adapts to different screen sizes  
+## Features
 
-## 🚀 Live Demo
+- **Cylindrical Spiral Gallery** — Images arranged in a helix around a 3D cylinder, driven by scroll input
+- **Custom GLSL Shaders** — Per-instance rendering with dithering, chromatic aberration, scan lines, flicker, and distance fade
+- **Scroll Physics** — Momentum-based scrolling with configurable friction, velocity, and rotation smoothing
+- **Post-Processing** — Bloom with adjustable intensity, threshold, smoothing, and radius
+- **Wireframe Shape** — Decorative 3D wireframe shape (Torus, TorusKnot, Cube) centered in the gallery, reacting to scroll
+- **Visual Presets** — Switchable presets (Default, Green SCIFI) that update bloom, border, and dither settings via Leva
+- **Live Controls** — Full Leva GUI for tweaking all parameters in real time (gallery, motion, effects, border, corners, dither, torus, bloom)
+- **Texture Atlas** — Images packed into a single atlas texture for efficient GPU rendering
 
-[**View Online →**](#)  
-*(Replace this link with your hosted demo URL)*
+---
 
-## 🧠 Tech Stack
+## Tech Stack
 
-- [Three.js](https://threejs.org/) — WebGL 3D rendering  
-- [Vite](https://vitejs.dev/) — Development environment  
-- [GSAP](https://greensock.com/gsap/) — Smooth animations 
-- [Postprocessing]([https://github.com/vanruesc/postprocessing](https://react-postprocessing.docs.pmnd.rs/)) — Visual effects (bloom, chromatic aberration)  
+- **Framework:** Next.js 13.5 (App Router)
+- **3D/WebGL:** Three.js, React Three Fiber, React Three Drei
+- **Post-Processing:** React Three Postprocessing
+- **Animation:** GSAP
+- **Controls:** Leva (GUI controls)
+- **Styling:** Tailwind CSS, SCSS Modules
 
-## 🛠️ Installation
+---
 
-Clone this repository and install dependencies:
+## Getting Started
+
+### Prerequisites
+
+- Node.js 18+
+- npm or pnpm
+
+### Installation
 
 ```bash
-git clone https://github.com/cortiz2894/showcase-images
+# Clone the repository
+git clone https://github.com/cortiz2894/showcase-images.git
+
+# Navigate to the project
 cd showcase-images
+
+# Install dependencies
 npm install
+
+# Start the development server
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) to view the gallery.
+
+---
+
+## Project Structure
+
+```
+components/
+  CylindricalGallery/    # Main gallery (instanced mesh, shaders, scroll, texture atlas)
+  PostProcessing/         # Bloom and post-processing effects
+  PresetSelector/         # Preset UI buttons and preset definitions
+  WireframeTorus.tsx      # Decorative wireframe shape with scroll reaction
+  CameraController.tsx    # Camera tilt driven by scroll velocity
+  BackgroundGrid/         # Background grid effect
+  Scene.tsx               # Root scene (Canvas, Leva, state management)
+```
+
+---
+
+## Controls
+
+The bottom-left UI provides:
+
+- **Preset buttons** — Switch between Default and Green SCIFI visual presets
+- **Shape** — Toggle the wireframe shape visibility
+- **Config** — Toggle the Leva control panel
+
+When the Leva panel is visible, all parameters (gallery layout, motion, effects, border, dither, torus, bloom) can be adjusted in real time.
+
+---
+
+## Author
+
+**Christian Ortiz** - Creative Developer
+
+## Connect
+
+- **Portfolio:** [cortiz.dev](https://cortiz.dev)
+- **YouTube:** [@cortizdev](https://youtube.com/@cortizdev)
+- **X (Twitter):** [@cortiz2894](https://twitter.com/cortiz2894)
+- **LinkedIn:** [Christian Daniel Ortiz](https://linkedin.com/in/christian-daniel-ortiz)
+
+## Contact
+
+For inquiries, collaborations or questions: **cortiz2894@gmail.com**
