@@ -1,10 +1,7 @@
 'use client'
 
-import BackgroundAnimated from "@/components/BackgroundAnimated/index";
 import Footer from "@/components/Footer";
-import { Header } from "@/components/Header/index";
 import OverlayHeader from "@/components/OverlayHeader";
-import { Leva } from "leva";
 import dynamic from "next/dynamic";
 
 const Scene = dynamic(() => import("@/components/Scene"), {
@@ -39,8 +36,6 @@ const MOCK_IMAGES = [
 export default function Home() {
   return (
     <main>
-      {/* <BackgroundAnimated /> */}
-      {/* <Header /> */}
       <div
       style={{
         position: "fixed",
