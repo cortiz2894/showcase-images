@@ -9,6 +9,8 @@ Images are displayed on a scroll-driven spiral cylinder with custom GLSL shaders
 
 ---
 
+https://github.com/user-attachments/assets/789b7dad-dc6a-4b27-aa8b-fd7bede6dc26
+
 ## Features
 
 - **Cylindrical Spiral Gallery** — Images arranged in a helix around a 3D cylinder, driven by scroll input
