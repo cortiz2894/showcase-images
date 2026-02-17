@@ -64,7 +64,7 @@ export default function PresetSelector({
           Config
         </button>
       </div>
-      <div className={styles.row}>
+      {/* <div className={styles.row}>
         {DEBUG_BUTTONS.map(({ key, label }) => (
           <button
             key={key}
@@ -78,7 +78,7 @@ export default function PresetSelector({
             {label}
           </button>
         ))}
-      </div>
+      </div> */}
     </div>
   );
 }
