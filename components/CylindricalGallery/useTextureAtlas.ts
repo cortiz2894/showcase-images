@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import { useLoader } from "@react-three/fiber";
 import { TextureLoader, CanvasTexture, LinearFilter, ClampToEdgeWrapping } from "three";
 
@@ -9,9 +9,13 @@ interface AtlasMetadata {
   uniqueCount: number;
   /** Maps original image index to atlas tile index */
   indexMap: number[];
+  /** Reference to the atlas canvas for debug download */
+  atlasCanvasRef: React.RefObject<HTMLCanvasElement | OffscreenCanvas | null>;
 }
 
 export function useTextureAtlas(images: string[]): AtlasMetadata {
+  const atlasCanvasRef = useRef<HTMLCanvasElement | OffscreenCanvas | null>(null);
+
   // Deduplicate images
   const uniqueImages = useMemo(() => Array.from(new Set(images)), [images]);
 
@@ -70,8 +74,10 @@ export function useTextureAtlas(images: string[]): AtlasMetadata {
     atlasTexture.wrapT = ClampToEdgeWrapping;
     atlasTexture.needsUpdate = true;
 
+    atlasCanvasRef.current = canvas as HTMLCanvasElement;
+
     return { atlas: atlasTexture, cols, rows };
   }, [textures, uniqueImages]);
 
-  return { atlas, cols, rows, uniqueCount: uniqueImages.length, indexMap };
+  return { atlas, cols, rows, uniqueCount: uniqueImages.length, indexMap, atlasCanvasRef };
 }

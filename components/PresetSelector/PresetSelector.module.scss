@@ -40,4 +40,23 @@
     box-shadow: 0 0 12px rgba(109, 244, 206, 0.2),
       inset 0 0 8px rgba(109, 244, 206, 0.05);
   }
+
+  &.debugButton {
+    border-color: rgba(255, 183, 77, 0.4);
+    color: rgba(255, 183, 77, 0.6);
+
+    &:hover {
+      border-color: rgba(255, 183, 77, 0.8);
+      color: rgba(255, 183, 77, 0.9);
+      background: rgba(255, 183, 77, 0.08);
+    }
+  }
+
+  &.activeDebug {
+    border-color: #ffb74d;
+    color: #ffb74d;
+    background: rgba(255, 183, 77, 0.12);
+    box-shadow: 0 0 12px rgba(255, 183, 77, 0.2),
+      inset 0 0 8px rgba(255, 183, 77, 0.05);
+  }
 }

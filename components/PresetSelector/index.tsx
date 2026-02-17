@@ -8,12 +8,23 @@ interface PresetSelectorProps {
   onToggleShape: () => void;
   levaHidden: boolean;
   onToggleLeva: () => void;
+  debugMode: string;
+  onDebugChange: (mode: string) => void;
+  onAtlasDownload: () => void;
 }
 
 const LABELS: Record<string, string> = {
   default: "Default",
   greenScifi: "Green SCIFI",
 };
+
+const DEBUG_BUTTONS = [
+  { key: "wireframe", label: "Wireframe" },
+  { key: "flat", label: "Flat" },
+  { key: "colors", label: "Colors" },
+  { key: "atlas", label: "Atlas" },
+  { key: "depth", label: "Depth" },
+];
 
 export default function PresetSelector({
   active,
@@ -22,6 +33,9 @@ export default function PresetSelector({
   onToggleShape,
   levaHidden,
   onToggleLeva,
+  debugMode,
+  onDebugChange,
+  onAtlasDownload,
 }: PresetSelectorProps) {
   return (
     <div className={styles.container}>
@@ -49,6 +63,21 @@ export default function PresetSelector({
         >
           Config
         </button>
+      </div>
+      <div className={styles.row}>
+        {DEBUG_BUTTONS.map(({ key, label }) => (
+          <button
+            key={key}
+            className={`${styles.button} ${styles.debugButton} ${
+              debugMode === key ? styles.activeDebug : ""
+            }`}
+            onClick={() =>
+              key === "atlas" ? onAtlasDownload() : onDebugChange(key)
+            }
+          >
+            {label}
+          </button>
+        ))}
       </div>
     </div>
   );

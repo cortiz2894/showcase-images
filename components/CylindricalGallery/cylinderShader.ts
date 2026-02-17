@@ -6,6 +6,7 @@ export const vertexShader = /* glsl */ `
   uniform float uScale;
   uniform float uCurvature;
   uniform float uRotation;
+  uniform int uDebugMode;
 
   // Effects
   uniform float uSqueezeAmount;
@@ -38,6 +39,16 @@ export const vertexShader = /* glsl */ `
 
     float angle = aAngleOffset + uRotation;
 
+    // Flat debug: tangent plane (no bending onto cylinder)
+    if (uDebugMode == 3) {
+      float x = sin(angle) * squeezedRadius + scaled.x * cos(angle);
+      float z = cos(angle) * squeezedRadius - scaled.x * sin(angle);
+      vDepthFade = smoothstep(-squeezedRadius, squeezedRadius * 0.5, z);
+      vWorldY = y;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(x, y, z, 1.0);
+      return;
+    }
+
     float theta = scaled.x / (squeezedRadius * uCurvature);
     float finalAngle = angle + theta;
 
@@ -64,6 +75,7 @@ export const fragmentShader = /* glsl */ `
   uniform float uSaturation;
   uniform float uBrightness;
   uniform float uEmission;
+  uniform int uDebugMode;
   uniform float uScanLines;
   uniform float uScanLineSpeed;
   uniform float uScanLineDensity;
@@ -296,6 +308,33 @@ export const fragmentShader = /* glsl */ `
   }
 
   void main() {
+    // Debug: color-coded instances (golden ratio hue from vTextureIndex)
+    if (uDebugMode == 1) {
+      float hue = fract(floor(vTextureIndex + 0.5) * 0.618033988749);
+      float s = 0.8;
+      float v = 0.9;
+      // HSV to RGB
+      float c = v * s;
+      float x = c * (1.0 - abs(mod(hue * 6.0, 2.0) - 1.0));
+      float m = v - c;
+      vec3 rgb;
+      float h6 = hue * 6.0;
+      if (h6 < 1.0) rgb = vec3(c, x, 0.0);
+      else if (h6 < 2.0) rgb = vec3(x, c, 0.0);
+      else if (h6 < 3.0) rgb = vec3(0.0, c, x);
+      else if (h6 < 4.0) rgb = vec3(0.0, x, c);
+      else if (h6 < 5.0) rgb = vec3(x, 0.0, c);
+      else rgb = vec3(c, 0.0, x);
+      gl_FragColor = vec4(rgb + m, 1.0);
+      return;
+    }
+
+    // Debug: depth fade grayscale
+    if (uDebugMode == 2) {
+      gl_FragColor = vec4(vec3(vDepthFade), 1.0);
+      return;
+    }
+
     // Centered UV: from (0,0)-(1,1) to (-0.5,-0.5)-(0.5,0.5)
     vec2 centered = vUv - 0.5;
     vec2 halfSize = vec2(0.5);

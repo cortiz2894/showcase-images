@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useMemo, useEffect } from "react";
+import { useRef, useMemo, useEffect, useImperativeHandle, forwardRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { useControls } from "leva";
 import * as THREE from "three";
@@ -25,20 +25,50 @@ interface CylindricalGalleryProps {
   frictionRef: React.MutableRefObject<number>;
   updateScroll: () => void;
   preset: string;
+  debugMode: string;
 }
 
-export default function CylindricalGallery({
+export interface CylindricalGalleryHandle {
+  downloadAtlas: () => void;
+}
+
+const CylindricalGallery = forwardRef<CylindricalGalleryHandle, CylindricalGalleryProps>(function CylindricalGallery({
   images,
   scrollVelocity,
   scrollOffset,
   frictionRef,
   updateScroll,
   preset,
-}: CylindricalGalleryProps) {
+  debugMode,
+}, ref) {
   const meshRef = useRef<THREE.InstancedMesh>(null);
 
-  const { atlas, cols, rows, uniqueCount, indexMap } =
+  const { atlas, cols, rows, uniqueCount, indexMap, atlasCanvasRef } =
     useTextureAtlas(images);
+
+  useImperativeHandle(ref, () => ({
+    downloadAtlas() {
+      const canvas = atlasCanvasRef.current;
+      if (!canvas) return;
+      let dataUrl: string;
+      if (canvas instanceof HTMLCanvasElement) {
+        dataUrl = canvas.toDataURL("image/png");
+      } else {
+        // OffscreenCanvas: convert via blob synchronously is not possible,
+        // so we draw it onto a regular canvas
+        const tmp = document.createElement("canvas");
+        tmp.width = canvas.width;
+        tmp.height = canvas.height;
+        const ctx = tmp.getContext("2d")!;
+        ctx.drawImage(canvas as unknown as ImageBitmap, 0, 0);
+        dataUrl = tmp.toDataURL("image/png");
+      }
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = "texture-atlas.png";
+      a.click();
+    },
+  }), [atlasCanvasRef]);
 
   // Leva controls
   const { imageScale, radius, spiralStep, imagesPerTurn, curvature } =
@@ -66,7 +96,7 @@ export default function CylindricalGallery({
       squeezeWidth: { value: 7.5, min: 1, max: 15, step: 0.5, label: "Squeeze Width" },
       chromaticAberration: { value: 0.02, min: 0, max: 0.15, step: 0.005, label: "Chromatic Aberration" },
       opacity: { value: 1, min: 0, max: 1, step: 0.01, label: "Opacity" },
-      emission: { value: 1.45, min: 0, max: 3, step: 0.05, label: "Emission" },
+      emission: { value: 0.65, min: 0, max: 3, step: 0.05, label: "Emission" },
       saturation: { value: 1.50, min: 0, max: 3, step: 0.05, label: "Saturation" },
       brightness: { value: 1.15, min: 0.2, max: 3, step: 0.05, label: "Brightness" },
       scanLines: { value: 0.6, min: 0, max: 1, step: 0.05, label: "Scan Lines" },
@@ -74,7 +104,7 @@ export default function CylindricalGallery({
       scanLineDensity: { value: 25, min: 5, max: 100, step: 1, label: "Scan Density" },
       distanceFadeStart: { value: 3, min: 0, max: 20, step: 0.5, label: "Fade Start" },
       distanceFadeEnd: { value: 8, min: 1, max: 30, step: 0.5, label: "Fade End" },
-      flickerIntensity: { value: 0.26, min: 0, max: 1, step: 0.01, label: "Flicker" },
+      flickerIntensity: { value: 0.18, min: 0, max: 1, step: 0.01, label: "Flicker" },
       flickerSpeed: { value: 5.0, min: 0.1, max: 5, step: 0.1, label: "Flicker Speed" },
     });
 
@@ -163,6 +193,7 @@ export default function CylindricalGallery({
   // Shader uniforms (created once, updated per-frame)
   const uniforms = useMemo(
     () => ({
+      uDebugMode: { value: 0 },
       uRadius: { value: radius },
       uScrollOffset: { value: 0 },
       uTotalHeight: { value: totalHeight },
@@ -182,7 +213,7 @@ export default function CylindricalGallery({
       uScanLineDensity: { value: 25.0 },
       uDistanceFadeStart: { value: 3.0 },
       uDistanceFadeEnd: { value: 8.0 },
-      uFlickerIntensity: { value: 0.26 },
+      uFlickerIntensity: { value: 0.18 },
       uFlickerSpeed: { value: 5.0 },
       uAtlas: { value: atlas },
       uAtlasCols: { value: cols },
@@ -235,6 +266,12 @@ export default function CylindricalGallery({
     const material = meshRef.current.material as THREE.ShaderMaterial;
     const geometry = meshRef.current.geometry;
 
+    // Debug mode
+    const debugModeMap: Record<string, number> = { none: 0, colors: 1, depth: 2, flat: 3 };
+    material.uniforms.uDebugMode.value = debugModeMap[debugMode] ?? 0;
+    // material.wireframe = debugMode === "wireframe";
+    const isDebug = debugMode !== "none";
+
     // Update uniforms
     material.uniforms.uScale.value = imageScale;
     material.uniforms.uCurvature.value = curvature;
@@ -262,49 +299,73 @@ export default function CylindricalGallery({
 
     material.uniforms.uRotation.value = rotation.current;
 
-    // Effects
-    const targetSqueeze = Math.min(Math.abs(vel) * 3, 1.0) * squeezeMax;
-    smoothSqueeze.current += (targetSqueeze - smoothSqueeze.current) * 0.08;
-    material.uniforms.uSqueezeAmount.value = smoothSqueeze.current;
-    material.uniforms.uSqueezeWidth.value = squeezeWidth;
-    material.uniforms.uChromaticAberration.value = chromaticAberration;
-    material.uniforms.uOpacity.value = opacity;
-
-    material.uniforms.uEmission.value = emission;
-    material.uniforms.uSaturation.value = saturation;
-    material.uniforms.uBrightness.value = brightness;
-    material.uniforms.uScanLines.value = scanLines;
-    material.uniforms.uScanLineSpeed.value = scanLineSpeed;
-    material.uniforms.uScanLineDensity.value = scanLineDensity;
-    material.uniforms.uDistanceFadeStart.value = distanceFadeStart;
-    material.uniforms.uDistanceFadeEnd.value = distanceFadeEnd;
-    material.uniforms.uFlickerIntensity.value = flickerIntensity;
-    material.uniforms.uFlickerSpeed.value = flickerSpeed;
-
-    // Border
-    material.uniforms.uBorderWidth.value = borderWidth;
-    material.uniforms.uBorderColor.value.set(borderColor);
-    material.uniforms.uBorderEmission.value = borderEmission;
-    material.uniforms.uBorderRadius.value = borderRadius;
-    material.uniforms.uBorderOffset.value = borderOffset;
-
-    // Corners
-    material.uniforms.uCornerSize.value = cornerSize;
-    material.uniforms.uCornerWidth.value = cornerWidth;
-    material.uniforms.uCornerOffset.value = cornerOffset;
-
-    // Dither
-    material.uniforms.uDitherEnabled.value = ditherEnabled ? 1 : 0;
-    material.uniforms.uDitherCellSize.value = ditherCellSize;
-    material.uniforms.uDitherGap.value = ditherGap;
-    material.uniforms.uDitherContrast.value = ditherContrast;
-    material.uniforms.uDitherMode.value = DITHER_MODE_MAP[ditherMode] ?? 0;
-    material.uniforms.uDitherShape.value = DITHER_SHAPE_MAP[ditherShape] ?? 0;
-    material.uniforms.uDitherBaseScale.value = ditherBaseScale;
-    material.uniforms.uDitherIntensity.value = ditherIntensity;
-    material.uniforms.uDitherBgColor.value.set(ditherBgColor);
-    material.uniforms.uDitherFgColor.value.set(ditherFgColor);
-    material.uniforms.uDitherUseColor.value = ditherUseColor ? 1 : 0;
+    // Effects — disabled in debug modes
+    if (isDebug) {
+      material.uniforms.uSqueezeAmount.value = 0;
+      material.uniforms.uSqueezeWidth.value = squeezeWidth;
+      material.uniforms.uChromaticAberration.value = 0;
+      material.uniforms.uOpacity.value = 1;
+      material.uniforms.uEmission.value = 0;
+      material.uniforms.uSaturation.value = 1;
+      material.uniforms.uBrightness.value = 1;
+      material.uniforms.uScanLines.value = 0;
+      material.uniforms.uScanLineSpeed.value = 0;
+      material.uniforms.uScanLineDensity.value = 0;
+      material.uniforms.uDistanceFadeStart.value = 999;
+      material.uniforms.uDistanceFadeEnd.value = 999;
+      material.uniforms.uFlickerIntensity.value = 0;
+      material.uniforms.uFlickerSpeed.value = 0;
+      // Border — off
+      material.uniforms.uBorderWidth.value = 0;
+      material.uniforms.uBorderEmission.value = 0;
+      material.uniforms.uBorderRadius.value = 0;
+      material.uniforms.uBorderOffset.value = 0;
+      // Corners — off
+      material.uniforms.uCornerSize.value = 0;
+      material.uniforms.uCornerWidth.value = 0;
+      material.uniforms.uCornerOffset.value = 0;
+      // Dither — off
+      material.uniforms.uDitherEnabled.value = 0;
+    } else {
+      const targetSqueeze = Math.min(Math.abs(vel) * 3, 1.0) * squeezeMax;
+      smoothSqueeze.current += (targetSqueeze - smoothSqueeze.current) * 0.08;
+      material.uniforms.uSqueezeAmount.value = smoothSqueeze.current;
+      material.uniforms.uSqueezeWidth.value = squeezeWidth;
+      material.uniforms.uChromaticAberration.value = chromaticAberration;
+      material.uniforms.uOpacity.value = opacity;
+      material.uniforms.uEmission.value = emission;
+      material.uniforms.uSaturation.value = saturation;
+      material.uniforms.uBrightness.value = brightness;
+      material.uniforms.uScanLines.value = scanLines;
+      material.uniforms.uScanLineSpeed.value = scanLineSpeed;
+      material.uniforms.uScanLineDensity.value = scanLineDensity;
+      material.uniforms.uDistanceFadeStart.value = distanceFadeStart;
+      material.uniforms.uDistanceFadeEnd.value = distanceFadeEnd;
+      material.uniforms.uFlickerIntensity.value = flickerIntensity;
+      material.uniforms.uFlickerSpeed.value = flickerSpeed;
+      // Border
+      material.uniforms.uBorderWidth.value = borderWidth;
+      material.uniforms.uBorderColor.value.set(borderColor);
+      material.uniforms.uBorderEmission.value = borderEmission;
+      material.uniforms.uBorderRadius.value = borderRadius;
+      material.uniforms.uBorderOffset.value = borderOffset;
+      // Corners
+      material.uniforms.uCornerSize.value = cornerSize;
+      material.uniforms.uCornerWidth.value = cornerWidth;
+      material.uniforms.uCornerOffset.value = cornerOffset;
+      // Dither
+      material.uniforms.uDitherEnabled.value = ditherEnabled ? 1 : 0;
+      material.uniforms.uDitherCellSize.value = ditherCellSize;
+      material.uniforms.uDitherGap.value = ditherGap;
+      material.uniforms.uDitherContrast.value = ditherContrast;
+      material.uniforms.uDitherMode.value = DITHER_MODE_MAP[ditherMode] ?? 0;
+      material.uniforms.uDitherShape.value = DITHER_SHAPE_MAP[ditherShape] ?? 0;
+      material.uniforms.uDitherBaseScale.value = ditherBaseScale;
+      material.uniforms.uDitherIntensity.value = ditherIntensity;
+      material.uniforms.uDitherBgColor.value.set(ditherBgColor);
+      material.uniforms.uDitherFgColor.value.set(ditherFgColor);
+      material.uniforms.uDitherUseColor.value = ditherUseColor ? 1 : 0;
+    }
 
     // Update dynamic instance buffer attributes
     const angleAttr = geometry.getAttribute("aAngleOffset") as THREE.InstancedBufferAttribute;
@@ -348,4 +409,6 @@ export default function CylindricalGallery({
       />
     </instancedMesh>
   );
-}
+});
+
+export default CylindricalGallery;

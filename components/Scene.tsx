@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { Canvas } from "@react-three/fiber";
 import PostProcessing from "./PostProcessing";
 import CameraController from "./CameraController";
-import CylindricalGallery from "./CylindricalGallery";
+import CylindricalGallery, { CylindricalGalleryHandle } from "./CylindricalGallery";
 import BackgroundGrid from "./BackgroundGrid";
 import { useVirtualScroll } from "./CylindricalGallery/useVirtualScroll";
 import PresetSelector from "./PresetSelector";
@@ -57,23 +57,33 @@ function SceneContent({
   avatars,
   preset,
   shapeVisible,
-}: GallerySceneProps & { preset: string; shapeVisible: boolean }) {
+  debugMode,
+  galleryRef,
+}: GallerySceneProps & {
+  preset: string;
+  shapeVisible: boolean;
+  debugMode: string;
+  galleryRef: React.Ref<CylindricalGalleryHandle>;
+}) {
   const { scrollOffset, scrollVelocity, frictionRef, update } = useVirtualScroll(0.95);
+  const isDebug = debugMode !== "none";
 
   return (
     <>
-      <BackgroundGrid />
+      {!isDebug && <BackgroundGrid />}
       <CameraController scrollVelocity={scrollVelocity} />
-      {shapeVisible && <WireframeTorus scrollVelocity={scrollVelocity} />}
+      {!isDebug && shapeVisible && <WireframeTorus scrollVelocity={scrollVelocity} />}
       <CylindricalGallery
+        ref={galleryRef}
         images={avatars}
         scrollVelocity={scrollVelocity}
         scrollOffset={scrollOffset}
         frictionRef={frictionRef}
         updateScroll={update}
         preset={preset}
+        debugMode={debugMode}
       />
-      <PostProcessing preset={preset} />
+      {!isDebug && <PostProcessing preset={preset} />}
     </>
   );
 }
@@ -82,9 +92,19 @@ export default function Scene({ avatars }: GallerySceneProps) {
   const [preset, setPreset] = useState("greenScifi");
   const [shapeVisible, setShapeVisible] = useState(true);
   const [levaHidden, setLevaHidden] = useState(true);
+  const [debugMode, setDebugMode] = useState("none");
+  const galleryRef = useRef<CylindricalGalleryHandle>(null);
 
   const toggleShape = useCallback(() => setShapeVisible((v) => !v), []);
   const toggleLeva = useCallback(() => setLevaHidden((v) => !v), []);
+
+  const handleDebugChange = useCallback((mode: string) => {
+    setDebugMode((prev) => (prev === mode ? "none" : mode));
+  }, []);
+
+  const handleAtlasDownload = useCallback(() => {
+    galleryRef.current?.downloadAtlas();
+  }, []);
 
   return (
     <div
@@ -97,7 +117,13 @@ export default function Scene({ avatars }: GallerySceneProps) {
       }}
     >
       <Canvas camera={{ fov: 75, position: [0, 0, 12], rotation: [0, 0, 0] }}>
-        <SceneContent avatars={avatars} preset={preset} shapeVisible={shapeVisible} />
+        <SceneContent
+          avatars={avatars}
+          preset={preset}
+          shapeVisible={shapeVisible}
+          debugMode={debugMode}
+          galleryRef={galleryRef}
+        />
       </Canvas>
       <Leva hidden={levaHidden} theme={LEVA_THEME} />
       <PresetSelector
@@ -107,6 +133,9 @@ export default function Scene({ avatars }: GallerySceneProps) {
         onToggleShape={toggleShape}
         levaHidden={levaHidden}
         onToggleLeva={toggleLeva}
+        debugMode={debugMode}
+        onDebugChange={handleDebugChange}
+        onAtlasDownload={handleAtlasDownload}
       />
     </div>
   );
